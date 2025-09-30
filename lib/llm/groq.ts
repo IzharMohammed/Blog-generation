@@ -37,3 +37,30 @@ export async function generateContent(client: Groq, model: ChatModel, topic: str
     const content = resp.choices?.[0]?.message?.content ?? '';
     return content.trim();
 }
+
+// Stream content tokens as they arrive from GROQ
+export async function* streamContent(
+    client: Groq,
+    model: ChatModel,
+    topic: string,
+    title: string
+): AsyncGenerator<string, void, unknown> {
+    const prompt = `You are an expert blog writer. Use Markdown formatting. Generate a detailed blog post with clear sections and code blocks when relevant for the topic: "${topic}". Title: ${title}. Stream the content.`;
+    const stream = await client.chat.completions.create({
+        model,
+        stream: true,
+        messages: [
+            { role: 'system', content: 'You write detailed, well-structured Markdown content.' },
+            { role: 'user', content: prompt },
+        ],
+        temperature: 0.7,
+    } as any);
+
+    // groq-sdk returns an async iterable for streamed chunks
+    for await (const chunk of stream as any) {
+        const delta = chunk?.choices?.[0]?.delta?.content ?? chunk?.choices?.[0]?.message?.content ?? '';
+        if (typeof delta === 'string' && delta.length > 0) {
+            yield delta;
+        }
+    }
+}
