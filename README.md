@@ -55,11 +55,44 @@ Visit http://localhost:3000
 
 ## Where is the code?
 
-- API route: `src/app/api/blogs/route.ts`
-- GROQ client: `src/lib/llm/groq.ts`
-- “Graph” (orchestrator): `src/lib/graph/blogGraph.ts`
-- Zod schema: `src/lib/validation/blog.ts`
-- UI page: `src/app/page.tsx`
+- API route: `app/api/blogs/route.ts`
+- Streaming API: `app/api/blogs/stream/route.ts`
+- GROQ client: `lib/llm/groq.ts`
+- Graph (LangGraph): `lib/graph/blogGraph.ts`
+- Zod schema: `lib/validation/blog.ts`
+- UI page: `app/page.tsx`
+
+## What are “graphs” in this project?
+
+A graph is a set of small steps (nodes) connected by edges that define the order of execution. We use LangGraph JS to model the workflow:
+
+- Nodes in this app: `title_creation` → `outline_generation` → `content_generation` → `seo_summary` → `tags_extraction`.
+- Each node receives the current state and returns updates (like the title or tags).
+- This makes complex flows easier to reason about, test, and extend.
+
+Real‑world uses:
+
+- Multi‑step assistants (plan → search → write → review → publish)
+- Retrieval‑Augmented Generation (retrieve docs → summarize → cite sources)
+- Customer support bots (classify intent → route to tool → generate reply)
+- Data cleanup pipelines (detect type → normalize → validate → export)
+
+## What is “streaming” and why use it?
+
+Streaming returns model output as it’s generated (token by token) instead of waiting for the full response. We use Server‑Sent Events (SSE) to push tokens to the browser.
+
+- Benefits: faster feedback, better UX for long generations, easier to cancel or pause.
+- In this app: `/api/blogs/stream` streams the title first, then the article tokens. The UI shows content as it arrives with Markdown + code highlighting.
+
+
+![alt text](public/image.png)
+
+
+Real‑world uses:
+
+- Chat UIs and document writers that show text as it’s typed
+- Code assistants that reveal code blocks progressively
+- Live dashboards that show ongoing analysis (logs, metrics, search results)
 
 ## Notes
 

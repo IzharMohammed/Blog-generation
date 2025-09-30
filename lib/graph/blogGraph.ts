@@ -86,6 +86,12 @@ const State = Annotation.Root({
     seo: Annotation<{ summary?: string; tags?: string[] }>(),
 });
 
+// In a LangGraph (like StateGraph from @langchain/langgraph), the special constants START and END represent the entry and exit points of the graph, not actual nodes with logic. 
+// The first "real" node you add (like 'title_creation') is where your workflow begins after the graph starts. 
+// The edge `.addEdge(START, 'title_creation')` means: when the graph starts, go to the 'title_creation' node first. 
+// So, START is not a node you implement—it's just a marker for where the graph begins. 
+// That's why the first node you see in the code is 'title_creation', not START.
+
 export function compileBlogGraph() {
     return new StateGraph(State)
         .addNode('title_creation', title_creation)
@@ -93,6 +99,7 @@ export function compileBlogGraph() {
         .addNode('content_generation', content_generation)
         .addNode('seo_summary', seo_summary)
         .addNode('tags_extraction', tags_extraction)
+        // The graph starts at START, which immediately transitions to 'title_creation'
         .addEdge(START, 'title_creation')
         .addEdge('title_creation', 'outline_generation')
         .addEdge('outline_generation', 'content_generation')
