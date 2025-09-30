@@ -1,6 +1,7 @@
-import { runTopicGraph } from '@/lib/graph/blogGraph';
-import { GenerateBlogBodySchema } from '@/lib/validation/blog';
+
 import { NextRequest } from 'next/server';
+import { GenerateBlogBodySchema } from '../../../lib/validation/blog';
+import { runTopicGraph } from '../../../lib/graph/blogGraph';
 
 
 export const runtime = 'nodejs';

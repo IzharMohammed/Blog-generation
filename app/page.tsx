@@ -2,31 +2,30 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
-import styles from "./page.module.css";
+import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
+import "highlight.js/styles/github.css";
 
 export default function Home() {
   const [topic, setTopic] = useState("");
   const [loading, setLoading] = useState(false);
-  const [title, setTitle] = useState<string | null>(null);
-  const [content, setContent] = useState<string | null>(null);
+  const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    setTitle(null);
-    setContent(null);
+    setData(null);
     try {
       const res = await fetch("/api/blogs", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ topic }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Failed to generate blog");
-      setTitle(data.data.blog.title);
-      setContent(data.data.blog.content);
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || "Failed to generate blog");
+      setData(json.data);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Unexpected error");
     } finally {
@@ -36,14 +35,14 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 text-slate-900">
-      <main className="mx-auto max-w-3xl px-6 py-16">
+      <main className="mx-auto max-w-4xl px-6 py-16">
         <motion.h1
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
           className="text-4xl font-bold tracking-tight mb-6"
         >
-          AI Blog Generator (GROQ)
+          LangGraph Blog Generator (GROQ)
         </motion.h1>
 
         <motion.p
@@ -52,8 +51,8 @@ export default function Home() {
           transition={{ duration: 0.4, delay: 0.05 }}
           className="text-slate-600 mb-8"
         >
-          Enter a topic. The server will create a title and generate a full post
-          using GROQ.
+          This app builds a small graph of nodes: title → outline → content →
+          SEO summary → tags.
         </motion.p>
 
         <motion.form
@@ -84,26 +83,57 @@ export default function Home() {
           </div>
         )}
 
-        {title && (
-          <motion.h2
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.15 }}
-            className="mb-4 text-2xl font-semibold"
-          >
-            {title}
-          </motion.h2>
+        {data?.blog?.title && (
+          <section className="mb-8">
+            <h2 className="text-2xl font-semibold mb-2">Title</h2>
+            <p className="text-lg">{data.blog.title}</p>
+          </section>
         )}
 
-        {content && (
-          <motion.article
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.2 }}
-            className="prose prose-slate max-w-none"
-          >
-            <ReactMarkdown>{content}</ReactMarkdown>
-          </motion.article>
+        {data?.blog?.outline?.length ? (
+          <section className="mb-8">
+            <h2 className="text-2xl font-semibold mb-2">Outline</h2>
+            <ul className="list-disc pl-6 space-y-1">
+              {data.blog.outline.map((b: string, i: number) => (
+                <li key={i}>{b}</li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
+        {data?.blog?.content && (
+          <section className="mb-8">
+            <h2 className="text-2xl font-semibold mb-4">Content</h2>
+            <article className="prose prose-slate max-w-none">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeHighlight]}
+              >
+                {data.blog.content}
+              </ReactMarkdown>
+            </article>
+          </section>
+        )}
+
+        {(data?.seo?.summary || data?.seo?.tags?.length) && (
+          <section className="mb-8">
+            <h2 className="text-2xl font-semibold mb-2">SEO</h2>
+            {data.seo.summary && (
+              <p className="mb-2 text-slate-700">{data.seo.summary}</p>
+            )}
+            {data.seo.tags?.length ? (
+              <div className="flex flex-wrap gap-2">
+                {data.seo.tags.map((t: string, i: number) => (
+                  <span
+                    key={i}
+                    className="rounded-full bg-slate-200 px-3 py-1 text-xs font-medium text-slate-700"
+                  >
+                    {t}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+          </section>
         )}
       </main>
     </div>
